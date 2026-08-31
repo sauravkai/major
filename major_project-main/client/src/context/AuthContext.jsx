@@ -187,7 +187,20 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', mockToken);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      // Create logout session
+      await API.post('/sessions', {
+        userId: user?.id,
+        type: 'logout',
+        ipAddress: '',
+        location: '',
+        device: navigator.userAgent,
+      });
+    } catch (error) {
+      console.warn('Failed to create logout session:', error);
+    }
+
     setUser(null);
     setToken('');
     localStorage.removeItem('user');
@@ -206,6 +219,7 @@ export const AuthProvider = ({ children }) => {
         loginWithGoogle,
         loginAsDemoRole,
         logout,
+        setUser,
         isAuthenticated: !!user,
       }}
     >

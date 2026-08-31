@@ -14,6 +14,7 @@ import submissionRoutes from './routes/submissionRoutes.js';
 import interviewRoutes from './routes/interviewRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import sessionRoutes from './routes/sessionRoutes.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -56,6 +57,7 @@ app.use('/api/submissions', submissionRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/sessions', sessionRoutes);
 
 // Error Handler Middleware
 app.use(errorHandler);

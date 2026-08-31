@@ -42,10 +42,24 @@ const userSchema = new mongoose.Schema(
         type: String,
       },
     ],
+    location: {
+      type: String,
+      default: '',
+    },
+    website: {
+      type: String,
+      default: '',
+    },
+    socialLinks: {
+      github: { type: String, default: '' },
+      linkedin: { type: String, default: '' },
+      twitter: { type: String, default: '' },
+    },
     stats: {
       interviewsCompleted: { type: Number, default: 0 },
       problemsSolved: { type: Number, default: 0 },
       averageScore: { type: Number, default: 0 },
+      totalHours: { type: Number, default: 0 },
     },
   },
   { timestamps: true }

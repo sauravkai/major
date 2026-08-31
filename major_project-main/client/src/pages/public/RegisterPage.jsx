@@ -25,8 +25,8 @@ export const RegisterPage = () => {
     const res = await register(formData);
     setIsLoading(false);
     if (res?.success) {
-      if (formData.role === 'interviewer') navigate('/interviewer/dashboard');
-      else navigate('/dashboard');
+      if (formData.role === 'interviewer') navigate('/interviewer/welcome');
+      else navigate('/candidate/welcome');
     } else {
       setError(res?.message || 'Registration failed');
     }
@@ -38,7 +38,8 @@ export const RegisterPage = () => {
     const res = await registerWithGoogle();
     setIsLoading(false);
     if (res?.success) {
-      navigate('/dashboard');
+      if (formData.role === 'interviewer') navigate('/interviewer/welcome');
+      else navigate('/candidate/welcome');
     } else {
       setError(res?.message || 'Google registration failed');
     }
