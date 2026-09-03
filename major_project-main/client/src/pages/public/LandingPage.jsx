@@ -1,6 +1,8 @@
 import { useTheme } from '../../context/ThemeContext';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import API from '../../services/api';
+import { UpgradeButton } from '../../components/payment/UpgradeButton';
 import { Code2, ArrowRight, Play, CheckCircle, MessageSquare, BarChart3, Zap, Users, Star, Sun, Moon, Activity, Volume2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
@@ -11,6 +13,26 @@ export const LandingPage = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState('All');
   const [isPlaying, setIsPlaying] = useState(false);
+  const [paidPlans, setPaidPlans] = useState({});
+
+  useEffect(() => {
+    API.get('/payments/plans')
+      .then((res) => {
+        const byId = {};
+        res.data.data.plans.forEach((plan) => { byId[plan.id] = plan; });
+        setPaidPlans(byId);
+      })
+      .catch(() => setPaidPlans({}));
+  }, []);
+
+  const formatPrice = (plan, fallback) =>
+    plan
+      ? new Intl.NumberFormat('en-IN', {
+          style: 'currency',
+          currency: plan.currency,
+          maximumFractionDigits: 0,
+        }).format(plan.amount / 100)
+      : fallback;
 
   const codeExamples = {
     javascript: `function twoSum(nums, target) {
@@ -620,9 +642,9 @@ export const LandingPage = () => {
               <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Pro Evaluator</h3>
               <p className={`text-sm mb-4 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Active Job Seekers</p>
               <div className="mb-6">
-                <span className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>$19</span>
+                <span className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatPrice(paidPlans.pro_monthly, '$19')}</span>
                 <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>/month</span>
-                <span className={`text-xs block ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>or $149/yr</span>
+                <span className={`text-xs block ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>or {formatPrice(paidPlans.pro_yearly, '$149')}/yr</span>
               </div>
               <ul className="space-y-3 mb-6">
                 <li className={`flex items-start gap-2 text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
@@ -642,10 +664,19 @@ export const LandingPage = () => {
                   <span>Advanced Analytics & Progress Tracking</span>
                 </li>
               </ul>
-              <Link to="/register" className="block w-full text-center px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors text-sm font-medium">
-                Start 7-Day Free Trial
-              </Link>
-              <p className={`text-xs text-center mt-3 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Cancel Anytime</p>
+              <UpgradeButton
+                planId="pro_monthly"
+                className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors text-sm font-medium"
+              >
+                Upgrade to Pro
+              </UpgradeButton>
+              <UpgradeButton
+                planId="pro_yearly"
+                className={`w-full mt-3 px-6 py-2 rounded-lg border text-xs font-medium transition-colors ${isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+              >
+                Pay yearly &amp; save
+              </UpgradeButton>
+              <p className={`text-xs text-center mt-3 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Secure checkout via Razorpay</p>
             </motion.div>
 
             {/* Enterprise Plan */}
