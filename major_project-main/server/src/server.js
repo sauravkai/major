@@ -15,6 +15,8 @@ import interviewRoutes from './routes/interviewRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import sessionRoutes from './routes/sessionRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import { handleWebhook } from './controllers/paymentController.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -29,6 +31,10 @@ const io = new Server(server, {
 
 // Middleware
 app.use(cors());
+
+// Razorpay signs the raw request body, so this route must be parsed before express.json()
+app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), handleWebhook);
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -58,6 +64,7 @@ app.use('/api/interviews', interviewRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/sessions', sessionRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Error Handler Middleware
 app.use(errorHandler);

@@ -55,6 +55,17 @@ const userSchema = new mongoose.Schema(
       linkedin: { type: String, default: '' },
       twitter: { type: String, default: '' },
     },
+    subscription: {
+      plan: { type: String, enum: ['free', 'pro'], default: 'free' },
+      status: {
+        type: String,
+        enum: ['inactive', 'active', 'expired'],
+        default: 'inactive',
+      },
+      billingCycle: { type: String, enum: ['monthly', 'yearly', ''], default: '' },
+      currentPeriodEnd: { type: Date, default: null },
+      lastPaymentId: { type: String, default: '' },
+    },
     stats: {
       interviewsCompleted: { type: Number, default: 0 },
       problemsSolved: { type: Number, default: 0 },

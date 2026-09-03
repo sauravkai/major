@@ -11,5 +11,8 @@ export const config = {
   openaiApiKey: process.env.OPENAI_API_KEY || '',
   vapiApiKey: process.env.VAPI_API_KEY || '',
   vapiAssistantId: process.env.VAPI_ASSISTANT_ID || '',
+  razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
+  razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || '',
+  razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173'
 };

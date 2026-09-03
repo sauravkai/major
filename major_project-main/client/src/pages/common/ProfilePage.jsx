@@ -92,6 +92,13 @@ export const ProfilePage = () => {
 
   const [sessions, setSessions] = useState([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
+  const [subscription, setSubscription] = useState(null);
+
+  useEffect(() => {
+    API.get('/payments/subscription')
+      .then((res) => setSubscription(res.data.data))
+      .catch(() => setSubscription(null));
+  }, []);
 
   // Fetch sessions when sessions tab is active
   useEffect(() => {
@@ -439,6 +446,14 @@ export const ProfilePage = () => {
                   <div className="flex items-center gap-3 text-sm">
                     <Calendar className="w-4 h-4 text-slate-400" />
                     <span className="text-slate-600 dark:text-slate-400">Member since 2024</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Star className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-600 dark:text-slate-400">
+                      {subscription?.plan === 'pro' && subscription?.status === 'active'
+                        ? `Pro plan${subscription.currentPeriodEnd ? ` \u00b7 renews ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}` : ''}`
+                        : 'Free plan'}
+                    </span>
                   </div>
                 </div>
               </div>
