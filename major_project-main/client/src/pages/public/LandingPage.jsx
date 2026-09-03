@@ -1,3 +1,4 @@
+import { useTheme } from '../../context/ThemeContext';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Code2, ArrowRight, Play, CheckCircle, MessageSquare, BarChart3, Zap, Users, Star, Sun, Moon, Activity, Volume2 } from 'lucide-react';
@@ -6,7 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 export const LandingPage = () => {
   const [activeCode, setActiveCode] = useState('javascript');
-  const [isDark, setIsDark] = useState(false);
+  const { isDark } = useTheme();
   const [isRunning, setIsRunning] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState('All');
   const [isPlaying, setIsPlaying] = useState(false);
@@ -209,36 +210,7 @@ export const LandingPage = () => {
         variants={containerVariants}
         className={`relative z-10 ${isDark ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950' : 'bg-white'} border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}
       >
-        {/* Navigation */}
-        <nav className="relative z-10 sticky top-0 backdrop-blur-sm">
-          <div className="w-full px-4 h-14 flex items-center justify-center gap-6">
-
-            {/* Main Navigation Links */}
-            <nav className="hidden md:flex items-center gap-6">
-              <a href="#features" className={`text-sm font-medium ${isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} transition-colors`}>
-                Features
-              </a>
-              <a href="#pricing" className={`text-sm font-medium ${isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} transition-colors`}>
-                Pricing
-              </a>
-              <a href="#testimonials" className={`text-sm font-medium ${isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} transition-colors`}>
-                Reviews
-              </a>
-              <a href="#faq" className={`text-sm font-medium ${isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} transition-colors`}>
-                FAQ
-              </a>
-            </nav>
-
-            {/* Theme Toggle */}
-            <button
-              onClick={() => setIsDark(!isDark)}
-              className={`p-1.5 rounded-lg ${isDark ? 'bg-slate-800 text-slate-300 hover:text-white' : 'bg-slate-100 text-slate-600 hover:text-slate-900'} transition-colors`}
-            >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-          </div>
-        </nav>
-
+      
         {/* Hero Content */}
         <div className="w-full px-4 py-8 pb-12">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
@@ -256,21 +228,15 @@ export const LandingPage = () => {
               <p className={`text-base ${isDark ? 'text-slate-400' : 'text-slate-600'} leading-relaxed`}>
                 Practice real coding challenges out loud. Get instant AI voice feedback on your logic, pacing, and problem-solving before talking to a real interviewer.
               </p>
-              <div className="flex flex-col sm:flex-row items-start gap-3">
-                <Link
-                  to="/ai-interview/practice"
-                  className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition-colors"
-                >
-                  Try a 2-Minute Practice Session
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  to="/register"
-                  className={`${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'} text-sm font-medium`}
-                >
-                  or create account →
-                </Link>
-              </div>
+              <div className="flex items-start">
+  <Link
+    to="/register"
+    className="flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-base rounded-xl shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 hover:shadow-indigo-500/50"
+  >
+    Create Your Free Account
+    <ArrowRight className="w-5 h-5" />
+  </Link>
+</div>
             </motion.div>
 
             {/* Interactive Code Preview */}
@@ -356,37 +322,63 @@ export const LandingPage = () => {
       </motion.section>
 
       {/* Social Proof */}
-      <section className={`relative z-10 py-12 px-4 border-t ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-200 bg-white'}`}>
-        <div className="w-full">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="text-center md:text-left">
-              <p className={`text-sm mb-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Trusted by engineers at</p>
-              <div className={`flex items-center gap-6 text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
-                <span>Google</span>
-                <span>Meta</span>
-                <span>Amazon</span>
-                <span>Microsoft</span>
-                <span>Apple</span>
-                <span>Netflix</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="text-center">
-                <div className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>12,000+</div>
-                <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Practice sessions</div>
-              </div>
-              <div className="text-center">
-                <div className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>4.8/5</div>
-                <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>User rating</div>
-              </div>
-              <div className="text-center">
-                <div className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>2,500+</div>
-                <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Offers received</div>
-              </div>
-            </div>
-          </div>
+     {/* Social Proof */}
+<section
+  className="relative z-10 py-16 px-4 border-t border-slate-800 overflow-hidden"
+  style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)' }}
+>
+  {/* Subtle grid overlay */}
+  <div className="absolute inset-0 opacity-20"
+    style={{
+      backgroundImage: `radial-gradient(circle at 1px 1px, rgba(99,102,241,0.3) 1px, transparent 0)`,
+      backgroundSize: '40px 40px'
+    }}
+  />
+  {/* Glow orbs */}
+  <div className="absolute top-0 left-1/4 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl" />
+  <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl" />
+
+  <div className="relative w-full">
+    <div className="flex flex-col md:flex-row items-center justify-between gap-10">
+
+      {/* Left: Trusted by */}
+      <div className="text-center md:text-left">
+        <p className="text-xs font-mono tracking-widest uppercase text-slate-500 mb-3">
+          Trusted by engineers at
+        </p>
+        <div className="flex flex-wrap items-center gap-6">
+          {['Google', 'Meta', 'Amazon', 'Microsoft', 'Apple', 'Netflix'].map((company) => (
+            <span
+              key={company}
+              className="text-sm font-semibold text-slate-300 hover:text-white transition-colors cursor-default"
+            >
+              {company}
+            </span>
+          ))}
         </div>
-      </section>
+      </div>
+
+      {/* Right: Stats with dividers */}
+      <div className="flex items-center">
+        <div className="text-center px-8">
+          <div className="text-3xl font-bold text-indigo-400">12,000+</div>
+          <div className="text-xs text-slate-400 mt-1">Practice sessions</div>
+        </div>
+        <div className="w-px h-10 bg-slate-700" />
+        <div className="text-center px-8">
+          <div className="text-3xl font-bold text-indigo-400">4.8/5</div>
+          <div className="text-xs text-slate-400 mt-1">User rating</div>
+        </div>
+        <div className="w-px h-10 bg-slate-700" />
+        <div className="text-center px-8">
+          <div className="text-3xl font-bold text-indigo-400">2,500+</div>
+          <div className="text-xs text-slate-400 mt-1">Offers received</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
 
       {/* Features Section */}
       <motion.section 

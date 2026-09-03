@@ -38,7 +38,7 @@ export const Navbar = () => {
 
   return (
     <header className="sticky top-0 z-50 glass-panel border-b border-slate-800/80">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+<div className="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
         
         {/* Brand Logo */}
         <Link to="/" className="flex items-center gap-3 group">
@@ -56,6 +56,16 @@ export const Navbar = () => {
             </span>
           </div>
         </Link>
+                {/* Center Nav Links */}
+       <nav className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
+  <a href="/#features" className={`text-sm font-medium transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>Features</a>
+  <a href="/#pricing" className={`text-sm font-medium transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>Pricing</a>
+  <a href="/#testimonials" className={`text-sm font-medium transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>Reviews</a>
+  <a href="/#faq" className={`text-sm font-medium transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>FAQ</a>
+</nav>
+
+        {/* User Role Switcher & Action Controls */}
+        <div className="flex items-center gap-3"></div>
 
         {/* User Role Switcher & Action Controls */}
         <div className="flex items-center gap-3">
