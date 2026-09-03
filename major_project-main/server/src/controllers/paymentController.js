@@ -96,6 +96,19 @@ export const createOrder = async (req, res, next) => {
       },
     });
   } catch (error) {
+    if (error.response?.status === 401) {
+      console.error('[Payments] Razorpay rejected the API credentials');
+      return res.status(503).json({
+        success: false,
+        message: 'Payment provider credentials are invalid. Please contact support.',
+      });
+    }
+    if (error.response?.data?.error) {
+      return res.status(502).json({
+        success: false,
+        message: error.response.data.error.description || 'Payment provider error',
+      });
+    }
     next(error);
   }
 };
