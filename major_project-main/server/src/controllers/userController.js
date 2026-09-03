@@ -1,38 +1,41 @@
+import mongoose from 'mongoose';
 import { User } from '../models/User.js';
 import { Interview } from '../models/Interview.js';
 import { CodingProblem } from '../models/CodingProblem.js';
 import { Submission } from '../models/Submission.js';
+import { requireRole } from '../utils/validation.js';
 
 export const getUsers = async (req, res, next) => {
   try {
-    const users = await User.find().select('-password').sort({ createdAt: -1 });
-    res.json({ success: true, count: users.length, data: users });
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, Number.parseInt(req.query.limit, 10) || 25));
+
+    const [users, total] = await Promise.all([
+      User.find().select('-password').sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit),
+      User.countDocuments(),
+    ]);
+
+    res.json({ success: true, count: users.length, total, page, data: users });
   } catch (error) {
-    res.json({
-      success: true,
-      count: 3,
-      data: [
-        { _id: '1', name: 'Demo Candidate', email: 'candidate@platform.com', role: 'candidate', title: 'Software Engineer' },
-        { _id: '2', name: 'Demo Interviewer', email: 'interviewer@platform.com', role: 'interviewer', title: 'Tech Lead' },
-        { _id: '3', name: 'Admin Lead', email: 'admin@platform.com', role: 'admin', title: 'System Administrator' },
-      ],
-    });
+    next(error);
   }
 };
-
-import mongoose from 'mongoose';
 
 export const updateUserRole = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { role } = req.body;
-    let user = null;
-    if (mongoose.Types.ObjectId.isValid(id)) {
-      user = await User.findByIdAndUpdate(id, { role }, { new: true }).catch(() => null);
+    const role = requireRole(req.body?.role);
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
-    if (!user) {
-      user = { _id: id, role };
+    if (String(req.user._id) === id && role !== 'admin') {
+      return res.status(400).json({ success: false, message: 'You cannot remove your own admin role' });
     }
+
+    const user = await User.findByIdAndUpdate(id, { role }, { new: true }).select('-password');
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
     res.json({ success: true, data: user });
   } catch (error) {
     next(error);
@@ -41,33 +44,18 @@ export const updateUserRole = async (req, res, next) => {
 
 export const getDashboardStats = async (req, res, next) => {
   try {
-    const userCount = await User.countDocuments().catch(() => 42);
-    const problemCount = await CodingProblem.countDocuments().catch(() => 18);
-    const interviewCount = await Interview.countDocuments().catch(() => 125);
-    const submissionCount = await Submission.countDocuments().catch(() => 340);
+    const [totalUsers, totalProblems, totalInterviews, totalSubmissions] = await Promise.all([
+      User.countDocuments(),
+      CodingProblem.countDocuments(),
+      Interview.countDocuments(),
+      Submission.countDocuments(),
+    ]);
 
     res.json({
       success: true,
-      stats: {
-        totalUsers: userCount || 42,
-        totalProblems: problemCount || 18,
-        totalInterviews: interviewCount || 125,
-        totalSubmissions: submissionCount || 340,
-        activeServers: 'Operational',
-        dockerSandbox: 'Ready',
-      },
+      stats: { totalUsers, totalProblems, totalInterviews, totalSubmissions },
     });
   } catch (error) {
-    res.json({
-      success: true,
-      stats: {
-        totalUsers: 42,
-        totalProblems: 18,
-        totalInterviews: 125,
-        totalSubmissions: 340,
-        activeServers: 'Operational',
-        dockerSandbox: 'Ready',
-      },
-    });
+    next(error);
   }
 };

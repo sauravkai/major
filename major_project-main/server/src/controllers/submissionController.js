@@ -2,46 +2,30 @@ import mongoose from 'mongoose';
 import { runCodeService } from '../services/codeRunnerService.js';
 import { CodingProblem } from '../models/CodingProblem.js';
 import { Submission } from '../models/Submission.js';
-import { initialProblems } from '../seeders/problemSeeder.js';
+import { ValidationError, requireString } from '../utils/validation.js';
 
+const findProblem = async (problemId) => {
+  if (!problemId) return null;
+  if (mongoose.isValidObjectId(problemId)) {
+    const byId = await CodingProblem.findById(problemId);
+    if (byId) return byId;
+  }
+  return CodingProblem.findOne({ slug: String(problemId) });
+};
+
+/** Run the visible test cases only; hidden cases stay reserved for submissions. */
 export const runCode = async (req, res, next) => {
   try {
-    const { code, language, problemId, testCases } = req.body;
+    const code = requireString(req.body?.code, 'code', { max: 200000 });
+    const language = requireString(req.body?.language || 'javascript', 'language', { max: 20 });
 
-    let evalTestCases = testCases;
+    const problem = await findProblem(req.body?.problemId);
+    if (!problem) return res.status(404).json({ success: false, message: 'Problem not found' });
 
-    if (!evalTestCases || evalTestCases.length === 0) {
-      if (problemId) {
-        let problem = null;
-        if (mongoose.Types.ObjectId.isValid(problemId)) {
-          problem = await CodingProblem.findById(problemId).catch(() => null);
-        }
-        if (!problem) {
-          problem = initialProblems.find((p) => p._id === problemId || p.slug === problemId);
-        }
-        if (problem) {
-          evalTestCases = problem.testCases.filter((tc) => !tc.isHidden);
-        }
-      }
-    }
+    const testCases = (problem.testCases || []).filter((testCase) => !testCase.isHidden);
+    const result = await runCodeService({ code, language, testCases });
 
-    if (!evalTestCases || evalTestCases.length === 0) {
-      evalTestCases = [
-        { input: '2 7 11 15\n9', expectedOutput: '[0,1]' },
-        { input: '3 2 4\n6', expectedOutput: '[1,2]' },
-      ];
-    }
-
-    const result = await runCodeService({
-      code,
-      language: language || 'javascript',
-      testCases: evalTestCases,
-    });
-
-    res.json({
-      success: true,
-      result,
-    });
+    res.json({ success: true, result });
   } catch (error) {
     next(error);
   }
@@ -49,66 +33,36 @@ export const runCode = async (req, res, next) => {
 
 export const submitCode = async (req, res, next) => {
   try {
-    const { code, language, problemId, interviewId } = req.body;
+    const code = requireString(req.body?.code, 'code', { max: 200000 });
+    const language = requireString(req.body?.language || 'javascript', 'language', { max: 20 });
+    const { interviewId } = req.body || {};
 
-    let problem = null;
-    if (mongoose.Types.ObjectId.isValid(problemId)) {
-      problem = await CodingProblem.findById(problemId).catch(() => null);
-    }
-    if (!problem) {
-      problem = initialProblems.find((p) => p._id === problemId || p.slug === problemId) || initialProblems[0];
+    if (interviewId !== undefined && interviewId !== null && !mongoose.isValidObjectId(interviewId)) {
+      throw new ValidationError('interviewId must be a valid id');
     }
 
-    const result = await runCodeService({
-      code,
-      language: language || 'javascript',
-      testCases: problem.testCases || [],
-    });
+    const problem = await findProblem(req.body?.problemId);
+    if (!problem) return res.status(404).json({ success: false, message: 'Problem not found' });
+
+    const result = await runCodeService({ code, language, testCases: problem.testCases || [] });
 
     let submission = null;
-    const userId = req.user?._id || req.user?.id;
-    if (mongoose.Types.ObjectId.isValid(userId) && mongoose.Types.ObjectId.isValid(problem._id)) {
-      try {
-        submission = await Submission.create({
-          userId,
-          problemId: problem._id,
-          interviewId: mongoose.Types.ObjectId.isValid(interviewId) ? interviewId : null,
-          code,
-          language: language || 'javascript',
-          status: result.status,
-          passCount: result.passCount,
-          totalCount: result.totalCount,
-          executionTimeMs: result.executionTimeMs,
-          memoryMb: result.memoryMb,
-          testResults: result.testResults,
-        });
-      } catch (e) {
-        submission = null;
-      }
-    }
-
-    if (!submission) {
-      submission = {
-        _id: 'sub_' + Date.now(),
-        userId: userId || 'c1',
+    if (!req.user.isDemo && mongoose.isValidObjectId(req.user._id)) {
+      submission = await Submission.create({
+        userId: req.user._id,
         problemId: problem._id,
+        interviewId: interviewId || null,
         code,
-        language: language || 'javascript',
+        language,
         status: result.status,
         passCount: result.passCount,
         totalCount: result.totalCount,
         executionTimeMs: result.executionTimeMs,
-        memoryMb: result.memoryMb,
         testResults: result.testResults,
-        createdAt: new Date(),
-      };
+      });
     }
 
-    res.status(201).json({
-      success: true,
-      submission,
-      result,
-    });
+    res.status(201).json({ success: true, submission, result });
   } catch (error) {
     next(error);
   }
@@ -116,15 +70,15 @@ export const submitCode = async (req, res, next) => {
 
 export const getSubmissions = async (req, res, next) => {
   try {
-    const userId = req.user?._id || req.user?.id;
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.json({ success: true, count: 0, data: [] });
-    }
-    const submissions = await Submission.find({ userId })
+    if (req.user.isDemo) return res.json({ success: true, count: 0, data: [] });
+
+    const submissions = await Submission.find({ userId: req.user._id })
       .populate('problemId', 'title difficulty slug')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(100);
+
     res.json({ success: true, count: submissions.length, data: submissions });
   } catch (error) {
-    res.json({ success: true, count: 0, data: [] });
+    next(error);
   }
 };

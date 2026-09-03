@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { CodingProblem } from '../models/CodingProblem.js';
-import { config } from '../config/env.js';
+import { logger } from '../utils/logger.js';
 
 export const initialProblems = [
   {
@@ -1242,14 +1242,23 @@ An input string is valid if:
   },
 ];
 
+/**
+ * Insert the starter problem bank without touching problems that already exist,
+ * so operator edits and problems authored in the app survive a restart.
+ */
 export const seedProblems = async () => {
+  if (mongoose.connection.readyState !== 1) return { inserted: 0 };
+
   try {
-    if (mongoose.connection.readyState === 1) {
-      await CodingProblem.deleteMany({});
-      await CodingProblem.insertMany(initialProblems);
-      console.log('[Seeder] Coding problems seeded successfully.');
-    }
+    const existing = await CodingProblem.find({}, 'slug').lean();
+    const known = new Set(existing.map((problem) => problem.slug));
+    const missing = initialProblems.filter((problem) => !known.has(problem.slug));
+
+    if (missing.length) await CodingProblem.insertMany(missing, { ordered: false });
+    logger.info('Problem bank seeded', { inserted: missing.length, existing: known.size });
+    return { inserted: missing.length };
   } catch (error) {
-    console.error('[Seeder Error]:', error.message);
+    logger.error('Problem seeding failed', { error: error.message });
+    return { inserted: 0 };
   }
 };

@@ -26,9 +26,11 @@ export const Navbar = () => {
   const location = useLocation();
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
 
-  const handleDemoSwitch = (role) => {
-    loginAsDemoRole(role);
+  const handleDemoSwitch = async (role) => {
+    const res = await loginAsDemoRole(role);
     setRoleMenuOpen(false);
+    if (!res?.success) return;
+
     if (role === 'candidate') navigate('/dashboard');
     else if (role === 'interviewer') navigate('/interviewer/dashboard');
     else if (role === 'admin') navigate('/admin/dashboard');

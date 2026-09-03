@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Navbar } from './components/common/Navbar';
 
 import { LandingPage } from './pages/public/LandingPage';
@@ -22,8 +23,16 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { ResultsReportPage } from './pages/common/ResultsReportPage';
 import { ProfilePage } from './pages/common/ProfilePage';
 
+/** Gate a route behind a session, and optionally behind a set of roles. */
+function RequireAuth({ roles, children }) {
+  const { user, token } = useAuth();
+
+  if (!user || !token) return <Navigate to="/login" replace />;
+  if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />;
+  return children;
+}
+
 function AppContent() {
-  const { user } = useAuth();
   
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
@@ -38,29 +47,30 @@ function AppContent() {
           <Route path="/register" element={<RegisterPage />} />
 
           {/* Candidate Portal */}
-          <Route path="/candidate/welcome" element={<CandidateWelcomePage />} />
-          <Route path="/dashboard" element={<CandidateDashboard />} />
-          <Route path="/practice" element={<PracticeCodingPage />} />
-          <Route path="/ai-interview/practice" element={<AIInterviewPage />} />
+          <Route path="/candidate/welcome" element={<RequireAuth><CandidateWelcomePage /></RequireAuth>} />
+          <Route path="/dashboard" element={<RequireAuth><CandidateDashboard /></RequireAuth>} />
+          <Route path="/practice" element={<RequireAuth><PracticeCodingPage /></RequireAuth>} />
+          <Route path="/ai-interview/practice" element={<RequireAuth><AIInterviewPage /></RequireAuth>} />
 
           {/* Interviewer Portal */}
-          <Route path="/interviewer/welcome" element={<InterviewerWelcomePage />} />
-          <Route path="/interviewer/dashboard" element={<InterviewerDashboard />} />
-          <Route path="/live-room/:roomId" element={<LiveInterviewRoom />} />
+          <Route
+            path="/interviewer/welcome"
+            element={<RequireAuth roles={['interviewer', 'admin']}><InterviewerWelcomePage /></RequireAuth>}
+          />
+          <Route
+            path="/interviewer/dashboard"
+            element={<RequireAuth roles={['interviewer', 'admin']}><InterviewerDashboard /></RequireAuth>}
+          />
+          <Route path="/live-room/:roomId" element={<RequireAuth><LiveInterviewRoom /></RequireAuth>} />
 
           {/* Admin Portal */}
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/dashboard" element={<RequireAuth roles={['admin']}><AdminDashboard /></RequireAuth>} />
 
           {/* Evaluation Reports */}
-          <Route path="/results/:reportId" element={<ResultsReportPage />} />
+          <Route path="/results/:reportId" element={<RequireAuth><ResultsReportPage /></RequireAuth>} />
 
           {/* Profile */}
-          <Route
-            path="/profile"
-            element={
-              user ? <ProfilePage /> : <Navigate to="/login" replace />
-            }
-          />
+          <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -72,15 +82,17 @@ function AppContent() {
 
 export function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <SocketProvider>
-          <Router>
-            <AppContent />
-          </Router>
-        </SocketProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <SocketProvider>
+            <Router>
+              <AppContent />
+            </Router>
+          </SocketProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
