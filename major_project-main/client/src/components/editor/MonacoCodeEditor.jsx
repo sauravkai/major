@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useLayoutEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { Play, Send, Code, Settings2, RotateCcw } from 'lucide-react';
 
@@ -15,9 +15,42 @@ export const MonacoCodeEditor = ({
   isDark = false,
 }) => {
   const editorRef = useRef(null);
+  const applyingExternalRef = useRef(false);
 
   const handleEditorDidMount = (editor) => {
     editorRef.current = editor;
+    if (code !== undefined && code !== editor.getValue()) {
+      applyingExternalRef.current = true;
+      editor.setValue(code);
+      applyingExternalRef.current = false;
+    }
+  };
+
+  // Sync external `code` changes (remote peers, question switch, reset) into the editor
+  // without clobbering in-flight local typing or moving the cursor to the document end.
+  useLayoutEffect(() => {
+    const editor = editorRef.current;
+    if (!editor || code === undefined) return;
+    const model = editor.getModel();
+    if (!model || code === model.getValue()) return;
+
+    const position = editor.getPosition();
+    applyingExternalRef.current = true;
+    if (readOnly) {
+      model.setValue(code);
+    } else {
+      editor.executeEdits('external-sync', [
+        { range: model.getFullModelRange(), text: code, forceMoveMarkers: true },
+      ]);
+      editor.pushUndoStop();
+    }
+    applyingExternalRef.current = false;
+    if (position) editor.setPosition(model.validatePosition(position));
+  }, [code, readOnly]);
+
+  const handleChange = (value) => {
+    if (applyingExternalRef.current) return;
+    onChange(value);
   };
 
   const handleReset = () => {
@@ -95,8 +128,8 @@ export const MonacoCodeEditor = ({
           height="100%"
           language={language === 'cpp' ? 'cpp' : language}
           theme={isDark ? 'vs-dark' : 'vs-light'}
-          value={code}
-          onChange={onChange}
+          defaultValue={code}
+          onChange={handleChange}
           onMount={handleEditorDidMount}
           options={{
             readOnly,
