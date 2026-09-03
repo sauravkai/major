@@ -35,7 +35,7 @@ export const RegisterPage = () => {
   const handleGoogleRegister = async () => {
     setIsLoading(true);
     setError('');
-    const res = await registerWithGoogle();
+    const res = await registerWithGoogle(formData.role);
     setIsLoading(false);
     if (res?.success) {
       if (formData.role === 'interviewer') navigate('/interviewer/welcome');

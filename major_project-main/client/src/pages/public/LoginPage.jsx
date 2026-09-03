@@ -27,8 +27,16 @@ export const LoginPage = () => {
     }
   };
 
-  const handleQuickDemo = (role) => {
-    loginAsDemoRole(role);
+  const handleQuickDemo = async (role) => {
+    setIsLoading(true);
+    setError('');
+    const res = await loginAsDemoRole(role);
+    setIsLoading(false);
+
+    if (!res?.success) {
+      setError(res?.message || 'Demo sign-in is unavailable');
+      return;
+    }
     if (role === 'candidate') navigate('/dashboard');
     else if (role === 'interviewer') navigate('/interviewer/dashboard');
     else if (role === 'admin') navigate('/admin/dashboard');
@@ -40,7 +48,10 @@ export const LoginPage = () => {
     const res = await loginWithGoogle();
     setIsLoading(false);
     if (res?.success) {
-      navigate('/dashboard');
+      const role = res.user?.role;
+      if (role === 'interviewer') navigate('/interviewer/dashboard');
+      else if (role === 'admin') navigate('/admin/dashboard');
+      else navigate('/dashboard');
     } else {
       setError(res?.message || 'Google login failed');
     }

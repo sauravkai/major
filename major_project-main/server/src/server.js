@@ -1,78 +1,65 @@
-import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
-import cors from 'cors';
-import { config } from './config/env.js';
-import { connectDB } from './config/db.js';
+import { createApp, corsOptions } from './app.js';
+import { config, validateConfig } from './config/env.js';
+import { connectDB, disconnectDB } from './config/db.js';
 import { seedProblems } from './seeders/problemSeeder.js';
-import { errorHandler } from './middleware/errorHandler.js';
 import { setupInterviewSocket } from './sockets/interviewSocket.js';
+import { logger } from './utils/logger.js';
 
-import authRoutes from './routes/authRoutes.js';
-import problemRoutes from './routes/problemRoutes.js';
-import submissionRoutes from './routes/submissionRoutes.js';
-import interviewRoutes from './routes/interviewRoutes.js';
-import aiRoutes from './routes/aiRoutes.js';
-import userRoutes from './routes/userRoutes.js';
-import sessionRoutes from './routes/sessionRoutes.js';
-import paymentRoutes from './routes/paymentRoutes.js';
-import { handleWebhook } from './controllers/paymentController.js';
+const { errors, warnings } = validateConfig();
+warnings.forEach((warning) => logger.warn(warning));
+if (errors.length) {
+  errors.forEach((error) => logger.error(`Invalid configuration: ${error}`));
+  process.exit(1);
+}
 
-const app = express();
+const app = createApp();
 const server = http.createServer(app);
+const io = new Server(server, { cors: corsOptions });
 
-// Initialize Socket.IO with CORS
-const io = new Server(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  },
-});
-
-// Middleware
-app.use(cors());
-
-// Razorpay signs the raw request body, so this route must be parsed before express.json()
-app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), handleWebhook);
-
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
-
-// Connect DB & Seed initial data
-connectDB().then(() => {
-  seedProblems();
-});
-
-// Setup Socket handlers
 setupInterviewSocket(io);
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    service: 'AI Interview Platform API',
-    timestamp: new Date().toISOString(),
-    env: config.nodeEnv,
+const shutdown = async (signal) => {
+  logger.info('Shutting down', { signal });
+  const timer = setTimeout(() => process.exit(1), 10000);
+  timer.unref();
+
+  io.close();
+  server.close(async () => {
+    await disconnectDB();
+    process.exit(0);
   });
+};
+
+const start = async () => {
+  try {
+    await connectDB();
+    await seedProblems();
+  } catch (error) {
+    logger.error('Startup failed', { error: error.message });
+    process.exit(1);
+  }
+
+  server.listen(config.port, config.host, () => {
+    logger.info('API listening', {
+      port: config.port,
+      env: config.nodeEnv,
+      demoMode: config.demoMode,
+      corsOrigins: config.corsOrigins,
+    });
+  });
+};
+
+['SIGTERM', 'SIGINT'].forEach((signal) => process.on(signal, () => shutdown(signal)));
+
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled promise rejection', { error: reason instanceof Error ? reason.message : String(reason) });
 });
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/problems', problemRoutes);
-app.use('/api/submissions', submissionRoutes);
-app.use('/api/interviews', interviewRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/sessions', sessionRoutes);
-app.use('/api/payments', paymentRoutes);
-
-// Error Handler Middleware
-app.use(errorHandler);
-
-// Start HTTP Server
-server.listen(config.port, () => {
-  console.log(`===================================================`);
-  console.log(`🚀 AI Interview Platform Server Running on Port ${config.port}`);
-  console.log(`📡 Client URL: ${config.clientUrl}`);
-  console.log(`===================================================`);
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught exception', { error: error.message, stack: error.stack });
+  process.exit(1);
 });
+
+start();
