@@ -43,7 +43,7 @@ export const ResultsReportPage = () => {
         try {
           const res = await API.get(`/interviews/${reportId}/report`);
           if (res.data.success && res.data.data) {
-            setReport(res.data.data);
+            setReport(prev => ({ ...prev, ...res.data.data }));
           }
         } catch (e) {
           console.warn('Report API fallback engaged.');
